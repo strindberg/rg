@@ -1,0 +1,160 @@
+#!/bin/zsh
+
+# Recursive grep. Filters and patterns can be specified in many different ways.
+#
+# NOTE 1: this function requires the following versions or later: zsh 5.0.8, perl 5.14.0, ag (the silver searcher) 0.32.0.
+#
+# There are two sets of parameters: file selection and search terms. File selection parameters limit which files are searched for matches,
+# and are key to making the function fast. The most important are the -f parameters, which are intended to be a more or less
+# permanent list of file patterns that will NOT be searched. This could ideally be maintained in an alias. If used like this, the -F
+# parameters can be used to override the filtering, if a specific file should be included for a particular search. For example, for gradle
+# users, "build" is a good filter to have, but if you have specified "-f build" in your "rg" alias, calling "rg -F build" searches "build"
+# directories as well. The -E parameter can be used to exclude files with a particular file ending, so that "rg -E html" excludes all files
+# with an .html extension.
+#
+# There are also positive file selection parameters, such as -d, -e and -p. The -d parameter is used to select files that have a matching
+# path segment. Searching for only files in non-test code in a gradle project can be expressed as "rg -d src/main". The -e parameter is used
+# to select files of a particular type, so "rg -e 'js|java'" searches in java and javascript files. Finally, the -p parameter is used to
+# select more precicely what the file name should be, such as "rg -p build.gradle".
+#
+# NOTE 2: because of a quirk in the way "ag" works, negative file selection parameters such as -f and -E are expressed as globs, whereas
+# positive file selection (-d, -e, -p) are expressed as regular expressions.
+#
+# The search terms are used to find matching lines in the file contents. Patterns given as arguments are combined with an implicit AND. Thus
+# "rg no valid miu" will display all lines with ALL THREE words. Logical OR can be expressed with pipe (and need to be quoted):
+# "rg certifikat 'test|grp'".
+#
+# The function has been designed to lessen the need for regular expressions while searching ("no valid miu" is easier to type than the
+# corresponding regular expression permitting the three in any order), but full Perl style regular expressions are still supported in
+# any search term. You can easily search for, say, the complete word "compile" and four digits in a row with "rg '\bcompile\b' '\d\d\d\d'.
+#
+# The main focus of the function is to provide fast file search in a given directory, but it can also be used as a unix filter, accepting
+# input from stdin. Example: tail -f catalina.out | rg connect 'error|warning'. In this case the file selection parameters are of course
+# irrelevant.
+#
+# NOTE 3: searching for literal '(', ')', '^', '$', '*', '+' or other regular expression anchors or quantifieres requires single quotes and
+# backslashes: rg 'getId\(\)', rg '\$html'.
+
+# NOTE 4: understanding how the function works is not a prerequisite for using it, but there are two corner cases that might produce
+# seemingly strange results. The way the underlying function works can be seen as searching for the first search term, then filtering those
+# results for all the following terms in turn. Each search term will be colored as it is found. This means 1) Searching for purely numeric
+# terms after the first term can give strange effects. The color codes are numeric, and if you search for, say, "all 3", the color codes
+# around "all" might match the "3". This will produce strange-looking coloring, although the results are correct. 2) for similar reasons,
+# searching with overlapping search terms, such as "although thoughtful" will also give correct but weirdly colored results.
+#
+# NOTE 5: There are some limitations in how diacritic characters (åäö etc) are handled. 1) While specifying file name filters, it doesn't
+# work to specify for example "-p hål.txt". ag is simply bad att matching files with characters outside ASCII. It will find the correct
+# files if you specify the pattern widely enough such as "-p h.*l.txt", but you cannot pinpoint a specific non-ascii character. 2) using
+# non-ascii works well as a search term: "rg hål" will find the correct file contens. The only limitation is that case insensitive
+# comparison does not work: so, for exampel, searching for "hål" case-insensitively with "rg hål" will not match "HÅL", because "Å"
+# is not recognized as the upper-case version of "å". In this situation you will need to search like this: "rg h[åÅ]l".
+#
+#
+# Flags:
+# -i ignore case. Does not affect file name matching, only file contents.
+# -l output (unique) file names with matching file contents. No file contents are displayed.
+# -h don't print file names and line numbers, only matching lines.
+# -q display no output, only return non-zero exit status if no matches are found.
+# -D specify the root directory to search in. Default is '.'.
+# -d pattern that a directory segment in the path of a matching file must match (ex. -d main). Logical OR is expressed with pipe (ex. -d 'main|test')
+# -e require the specified file ending (ex. -e js). Logical OR is expressed with pipe (ex. -e 'js|java')
+# -p pattern that file name must match (ex. -p build.gradle). Logical OR is expressed with pipe (ex. -p 'pom.xml|build.gradle')
+# -A display lines before matches. Number of lines can be specified (ex. -A3). Default is 2 if -A is given without argument.
+# -B display lines after matches. Number of lines can be specified (ex. -B3). Default is 2 if -B is given without argument.
+# -C display lines before and after matches. Number of lines can be specified (ex. -C3). Default is 2 if -C is given without argument.
+# -m specify max depth to descend into file tree (ex. -m2). Default is 25. If -m is given without argument, only current directory is searched.
+# -E exclude files with the specified file ending (ex. -E js). This flag can be repeated to exclude several suffixes (ex. -E js -E html)
+# -v exclude file content lines matching pattern. Several filters can be specified. (ex. -v foo -v bar)
+# -f exclude files matching pattern. Several file filters can be specified. (ex. -f target -f build)
+# -F override -f flag. I.e. patterns specified with -F flag will be removed from list of file filters, (ex. -F target), and thus included in search.
+# -- stop parsing of options. This is required if searching for something resembling an option (ex. rg sed -- -i).
+#
+rgf() {
+    setopt LOCAL_OPTIONS EXTENDED_GLOB
+
+    local color=$'\e'"\[[0-9;]#[mK]" caseopt="-s" before=0 after=0 pattern="^" dir arg farg parg mdopt ctxopt case perl streaming
+    local zprefix="[^:]##:($color)##[0-9]##($color)##:($color)#"
+    local -a i l h q D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines
+
+    zparseopts -D -E i=i l=l h=h q=q D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds || return 1
+
+    args=("${@:#--}")
+
+    [[ -n $i ]] && caseopt=-i && case=i
+    [[ -n $A ]] && ctxopt=-A${${A[1]#-A}:-2} && after=${${A[1]#-A}:-2}
+    [[ -n $B ]] && ctxopt=-B${${B[1]#-B}:-2} && before=${${B[1]#-B}:-2}
+    [[ -n $C ]] && ctxopt=-C${${C[1]#-C}:-2} && after=${${C[1]#-C}:-2} && before=${${C[1]#-C}:-2}
+    [[ -n $m ]] && mdopt=--depth=${${m[1]#-m}:-0}
+    [[ -n $D ]] && dir=${D[2]:a}
+
+    for arg in ${${ffltrs:#-f}:|overrds}; do farg+="--ignore $arg "; done
+    for arg in ${sfltrs:#-E};             do farg+="--ignore *.$arg "; done
+
+    [[ -n $dspc ]] && parg="("${dspc:#-d}")/.*"
+    [[ -n $fspc ]] && parg+="("${fspc:#-p}")"
+    [[ -n $sfix ]] && parg+="\.("${sfix:#-e}")$"
+    [[ -n $parg ]] && farg+="-G $parg "
+
+    for arg in $args; do pattern+="(?=.*(?:$arg))"; done
+
+    perl='BEGIN { @terms = split(/\n/, "'${args:+${(j:\n:)${(q)args}}}'"); $filters = "'${(j:|:)${(q)fltrs:#-v}}'"; @colors = (31, 32, 36, 34, 35);
+                  $case = "'$case'"; $color="\e\[[0-9;]*[mK]"; $sprefix="^[^:]+:($color)+[0-9]+($color)+:($color)*"; $white = "\e[00m"; $| = 1; }
+          sub colormatches {
+              if ($streaming) { $content = $_ } else { ($prefix, undef, undef, undef, $content) = $_ =~ /($sprefix)(.*)/ }
+              if ($filters && $content =~ /(?$case)$filters/) { return (0, $prefix, $content) }
+              $ocontent = $content;
+              for $i (0 .. $#terms) {
+                  if ($ocontent =~ /(?$case)$terms[$i]/) { $content =~ s/(?$case)$terms[$i]/\e\[$colors[$i % 5]m$&$white/g }
+                  else { return (0, $prefix, $content)}
+              }
+              return (1, $prefix, $content) } '
+    if [[ -z $ctxopt ]]; then
+        [[ ! -t 0 ]] && streaming=true
+        perl+='BEGIN { $streaming = "'$streaming'" }
+               ($match, $rprefix, $rcontent) = colormatches(); if ($match) { print $rprefix . $rcontent } '
+    else
+        perl+='BEGIN { $before = '$before'; $after = '$after'; %matchrows = (); %contextrows = (); $rowcount = 0; }
+               if (/$sprefix/) {
+                   $rowcount++;
+                   ($match, $rprefix, $rcontent) = colormatches();
+                   if ($match) { $matchrows{$rowcount} = $rprefix . $rcontent }
+                   $contextrows{$rowcount} = $rprefix =~ s/.*\K:/-/rg . $rcontent =~ s/$color//gr
+               }
+               elsif (/^($color)*--($color)*$|^$/) { printlines(); %matchrows = (); %contextrows = (); $rowcount = 0; }
+               else { $contextrows{++$rowcount} = $_ }
+               END { printlines() }
+               sub printlines {
+                   $buffer = "";
+                   foreach $row (sort keys %matchrows) {
+                       for ($j = $before; $j > 0; $j--) { if ($row - $j >= 0) { $buffer .= "\n$contextrows{$row - $j}" } }
+                       $buffer .= "\n$matchrows{$row}";
+                       for ($j = 1; $j <= $after; $j++) { if ($row + $j <= keys %contextrows) { $buffer .= "\n$contextrows{$row + $j}" } }
+                       $buffer .= "\n--"
+                   }
+                   if ($buffer) { print $buffer } } '
+    fi
+
+    if [[ -n $streaming ]]; then
+        noglob ag $caseopt -- $pattern | perl -l -n -e $perl
+    else
+        rlines=("${(@f)$(noglob ag --filename --noheading --color --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- $pattern $dir | \
+                         perl -l -n -e $perl)}")
+
+        if (( ${rlines[(I)?*]} > 0 && ! $#q )); then # Display results if there are non-empty elements (and -q is not set).
+            if [[ -n $h ]]; then
+                print -r -l -- ${${(M)rlines:#${~zprefix}*}##${~zprefix}} # No context lines, remove file names and line numbers.
+            elif [[ -n $l ]]; then
+                print -r -l -- ${(q-)${(u)${${${(M)rlines:#${~zprefix}*}//${~color}/}%%:*}}} # Match lines, no color, keep filenames, unique, quote.
+            else
+                print -r -l -- $rlines
+            fi
+        fi
+
+        lastoutput=(${${(M)rlines:#${~zprefix}*}//${~color}/}) # No context lines, no colors.
+
+        return $(( ${rlines[(I)?*]} == 0 ))
+    fi
+}
+
+# Uncomment this line to use the function from bash
+# noglob rgf "$@"
