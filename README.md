@@ -63,7 +63,7 @@ alias rg='rG -i'
 declare -a lastoutput
 ```
 
-You now have two new commands: `rg` to search case-insensitively, and `rG` to search case-sensitively.
+You now have two new commands (or rather, aliases): `rg` to search case-insensitively, and `rG` to search case-sensitively.
 
 You can of course customize the `RG_EXCLUDES` array to exclude any files and directories that you never want to search (but see the
 documentation on the `-F` parameter if you want to temporarily override the filtering).
@@ -190,7 +190,7 @@ Second, find the following line at the end of `<PATH TO>/rg/rgf`, and uncomment 
 # noglob rgf "$@"
 ```
 
-You now have two new commands: `rg` to search case-insensitively, and `rG` to search case-sensitively.
+You now have two new commands (or rather, aliases): `rg` to search case-insensitively, and `rG` to search case-sensitively.
 
 You can of course customize the `RG_EXCLUDES` array to exclude any files and directories that you never want to search (but see the
 documentation on the `-F` parameter if you want to temporarily override the filtering).
