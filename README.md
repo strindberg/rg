@@ -27,7 +27,8 @@ and [`perl`](https://www.perl.org/) to narrow down the hits. You need `zsh`, `pe
 ## Usage
 
 The main feature of `rg`, and the main reason why you'd want to use it over pure `ag` or `grep`, is the way it automatically combines your
-search terms to only display lines that match all search criteria.
+search terms to only display lines that match all search criteria. It searches recursively in the current directory by default (this can be
+changed with the -D parameter to change root directory, and the -m parameter to change the search depth).
 
 As an example, to search for lines containing all three words 'no', 'valid' and 'miu', in any order, in Java files found anywhere containing
 a path segment `'src/main'` under your current directory, use:
@@ -130,6 +131,9 @@ zstyle ':completion:*previous-comp:*:*' menu no
 Here are some examples on how to wrap your editor in a function definition to make it easy to launch with the search results from `rg`. Put
 the functions in your `'~/.zshrc'`.
 
+To open a file in IDEA from the command line, you need to generate the `'idea'` script from within IDEA. Select 'Tools' -> 'Create Command-line
+Launcher', and save the created script somewhere in your path.
+
 If you are using Mac and IDEA, you probably want to uncomment the line within the `ii` function so that IDEA is activated as soon as you
 hit '`<enter>`.'
 
@@ -167,7 +171,7 @@ vv() {
 If you're using `bash` as your interactive shell (and are unwilling to upgrade to `zsh`), you can easily integrate `rg` for use on your
 command line. You need to do two things.
 
-First, add these lines in your `'~/.bashrc'`:
+First, add these lines in your `'~/.bashrc'` (remember to change `'<PATH TO>'` to the path where you cloned the repo):
 
 ```bash
 RG_EXCLUDES=(-f build -f target -f node -f node_modules -f bower_components -f '.idea' -f '.settings' -f '.git' \
@@ -181,8 +185,14 @@ alias rg="rG -i"
 ```
 
 Second, find the following line at the end of `<PATH TO>/rg/rgf`, and uncomment it:
+
 ```bash
 # noglob rgf "$@"
 ```
+
+You now have two new commands: `rg` to search case-insensitively, and `rG` to search case-sensitively.
+
+You can of course customize the `RG_EXCLUDES` array to exclude any files and directories that you never want to search (but see the
+documentation on the `-F` parameter if you want to temporarily override the filtering).
 
 Unfortunately, the completion integration to automatically use the search results in your editor does not work under `bash`.
