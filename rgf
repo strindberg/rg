@@ -53,7 +53,7 @@
 # Flags:
 # -i ignore case. Does not affect file name matching, only file contents.
 # -l output (unique) file names with matching file contents. No file contents are displayed.
-# -h don't print file names and line numbers, only matching lines.
+# -o don't print file names and line numbers, only matching lines.
 # -q display no output, only return non-zero exit status if no matches are found.
 # -D specify the root directory to search in. Default is '.'.
 # -d pattern that a directory segment in the path of a matching file must match (ex. -d main). Logical OR is expressed with pipe (ex. -d 'main|test')
@@ -74,9 +74,9 @@ rgf() {
 
     local color=$'\e'"\[[0-9;]#[mK]" caseopt="-s" before=0 after=0 pattern="^" dir arg farg parg mdopt ctxopt case perl streaming
     local zprefix="[^:]##:($color)##[0-9]##($color)##:($color)#"
-    local -a i l h q D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines
+    local -a i l o q D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines
 
-    zparseopts -D -E i=i l=l h=h q=q D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds || return 1
+    zparseopts -D -E i=i l=l o=o q=q D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds || return 1
 
     args=("${@:#--}")
 
@@ -141,7 +141,7 @@ rgf() {
                          perl -l -n -e $perl)}")
 
         if (( ${rlines[(I)?*]} > 0 && ! $#q )); then # Display results if there are non-empty elements (and -q is not set).
-            if [[ -n $h ]]; then
+            if [[ -n $o ]]; then
                 print -r -l -- ${${(M)rlines:#${~zprefix}*}##${~zprefix}} # No context lines, remove file names and line numbers.
             elif [[ -n $l ]]; then
                 print -r -l -- ${(q-)${(u)${${${(M)rlines:#${~zprefix}*}//${~color}/}%%:*}}} # Match lines, no color, keep filenames, unique, quote.

@@ -43,7 +43,7 @@ $ rg port -l | xargs ls -l
 Search for string 'port' in all files but display only matching lines, not file names:
 
 ```zsh
-$ rg port -h
+$ rg port -o
 ```
 
 Search for string 'port' and exclude lines containing 'import' OR 'support':
