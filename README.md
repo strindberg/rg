@@ -21,9 +21,8 @@ limit your searches and pinpoint the matches.
 
 Moreover, it offers an extremely quick way of getting back into your IDE or editor exactly at the place you found.
 
-`rg` relies on `ag` ("the silver searcher") to quickly find matches, and `zsh` and `perl` to narrow down the hits. You need `zsh`, `perl`
-and `ag` installed to use `rg`, but you don't need to use `zsh` as your default shell. For an example how you can use the tool under `bash`,
-see [below](#bash).
+`rg` relies on `ag` (["the silver searcher"](https://github.com/ggreer/the_silver_searcher)) to quickly find matches, and [`zsh`](http://www.zsh.org/)
+and [`perl`](https://www.perl.org/) to narrow down the hits. You need `zsh`, `perl` and `ag` installed to use `rg`, but you don't need to use `zsh` as your default shell. For an example how you can use the tool under `bash`, see [below](#bash).
 
 ## Usage
 
@@ -48,7 +47,8 @@ Installing `rg` is very easy.
 First, you need to install recent enough versions of `zsh`, `perl` and `ag` (also known as "the silver searcher"). The oldest versions
 that have been tested are: `zsh 5.0.8`, `perl 5.14.0` and `ag 0.32.0`.
 
-Next, you need to clone this repo, and then add the following lines to your `'~/.zshrc'`:
+Next, you need to clone this repo, and then add the following lines to your `'~/.zshrc'` (remember to change `'<PATH TO>'` to the path where
+you cloned the repo):
 
 ```zsh
 source <PATH TO>/rg/rgf
