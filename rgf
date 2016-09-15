@@ -50,25 +50,31 @@
 # is not recognized as the upper-case version of "å". In this situation you will need to search like this: "rg h[åÅ]l".
 #
 #
-# Flags:
-# -i ignore case. Does not affect file name matching, only file contents.
-# -l output (unique) file names with matching file contents. No file contents are displayed.
-# -o don't print file names and line numbers, only matching lines.
-# -q display no output, only return non-zero exit status if no matches are found.
-# -D specify the root directory to search in. Default is '.'.
-# -d pattern that a directory segment in the path of a matching file must match (ex. -d main). Logical OR is expressed with pipe (ex. -d 'main|test')
-# -e require the specified file ending (ex. -e js). Logical OR is expressed with pipe (ex. -e 'js|java')
-# -p pattern that file name must match (ex. -p build.gradle). Logical OR is expressed with pipe (ex. -p 'pom.xml|build.gradle')
-# -A display lines before matches. Number of lines can be specified (ex. -A3). Default is 2 if -A is given without argument.
-# -B display lines after matches. Number of lines can be specified (ex. -B3). Default is 2 if -B is given without argument.
-# -C display lines before and after matches. Number of lines can be specified (ex. -C3). Default is 2 if -C is given without argument.
-# -m specify max depth to descend into file tree (ex. -m2). Default is 25. If -m is given without argument, only current directory is searched.
-# -E exclude files with the specified file ending (ex. -E js). This flag can be repeated to exclude several suffixes (ex. -E js -E html)
-# -v exclude file content lines matching pattern. Several filters can be specified. (ex. -v foo -v bar)
-# -f exclude files matching pattern. Several file filters can be specified. (ex. -f target -f build)
-# -F override -f flag. I.e. patterns specified with -F flag will be removed from list of file filters, (ex. -F target), and thus included in search.
-# -- stop parsing of options. This is required if searching for something resembling an option (ex. rg sed -- -i).
-#
+
+__rgf_help() {
+    print "Usage: rg/rG [options] [search terms]
+
+Options:
+-i    ignore case. Does not affect file name matching, only file contents.
+-l    output (unique) file names with matching file contents. No file contents are displayed.
+-o    don't print file names and line numbers, only matching lines.
+-q    display no output, only return non-zero exit status if no matches are found.
+-D    specify the root directory to search in. Default is '.'.
+-d    pattern that a directory segment in the path of a matching file must match (ex. -d main). Logical OR is expressed with pipe (ex. -d 'main|test')
+-e    require the specified file ending (ex. -e js). Logical OR is expressed with pipe (ex. -e 'js|java')
+-p    pattern that file name must match (ex. -p build.gradle). Logical OR is expressed with pipe (ex. -p 'pom.xml|build.gradle')
+-A    display lines after matches. Number of lines can be specified (ex. -A3). Default is 2 if -A is given without argument.
+-B    display lines before matches. Number of lines can be specified (ex. -B3). Default is 2 if -B is given without argument.
+-C    display lines before and after matches. Number of lines can be specified (ex. -C3). Default is 2 if -C is given without argument.
+-m    specify max depth to descend into file tree (ex. -m2). Default is 25. If -m is given without argument, only current directory is searched.
+-E    exclude files with the specified file ending (ex. -E js). This flag can be repeated to exclude several suffixes (ex. -E js -E html)
+-v    exclude file content lines matching pattern. Several filters can be specified. (ex. -v foo -v bar)
+-f    exclude files with names matching pattern. Several file name filters can be specified. (ex. -f target -f build)
+-F    override -f flag. I.e. patterns specified with -F flag will be removed from list of file filters, (ex. -F target), and thus included in search.
+--    stop parsing of options. This is required if searching for something resembling an option (ex. rg sed -- -i).
+"
+}
+
 rgf() {
     setopt LOCAL_OPTIONS EXTENDED_GLOB
 
@@ -76,10 +82,12 @@ rgf() {
     local zprefix="[^:]##:($color)##[0-9]##($color)##:($color)#"
     local -a i l o q D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines
 
-    zparseopts -D -E i=i l=l o=o q=q D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds || return 1
+    zparseopts -D -E i=i l=l o=o q=q D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds h=h -help=h \
+        || { __rgf_help; return 1 }
 
     args=("${@:#--}")
 
+    [[ -n $h ]] && { __rgf_help; return 0 }
     [[ -n $i ]] && caseopt=-i && case=i
     [[ -n $A ]] && ctxopt=-A${${A[1]#-A}:-2} && after=${${A[1]#-A}:-2}
     [[ -n $B ]] && ctxopt=-B${${B[1]#-B}:-2} && before=${${B[1]#-B}:-2}
