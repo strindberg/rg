@@ -48,8 +48,6 @@
 # non-ascii works well as a search term: "rg hål" will find the correct file contens. The only limitation is that case insensitive
 # comparison does not work: so, for exampel, searching for "hål" case-insensitively with "rg hål" will not match "HÅL", because "Å"
 # is not recognized as the upper-case version of "å". In this situation you will need to search like this: "rg h[åÅ]l".
-#
-#
 
 __rgf_help() {
     print "Usage: rg/rG [options] [search terms]
@@ -80,7 +78,7 @@ rgf() {
 
     local color=$'\e'"\[[0-9;]#[mK]" caseopt="-s" before=0 after=0 pattern="^" dir arg farg parg mdopt ctxopt case perl streaming
     local zprefix="[^:]##:($color)##[0-9]##($color)##:($color)#"
-    local -a i l o q D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines
+    local -a i l o q D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines h
 
     zparseopts -D -E i=i l=l o=o q=q D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds h=h -help=h \
         || { __rgf_help; return 1 }
