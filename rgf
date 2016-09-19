@@ -86,10 +86,10 @@ rgf() {
     args=("${@:#--}")
 
     [[ -n $h ]] && { __rgf_help; return 0 }
-    [[ -n $i ]] && caseopt=-i && case=i
-    [[ -n $A ]] && ctxopt=-A${${A[1]#-A}:-2} && after=${${A[1]#-A}:-2}
-    [[ -n $B ]] && ctxopt=-B${${B[1]#-B}:-2} && before=${${B[1]#-B}:-2}
-    [[ -n $C ]] && ctxopt=-C${${C[1]#-C}:-2} && after=${${C[1]#-C}:-2} && before=${${C[1]#-C}:-2}
+    [[ -n $i ]] && { caseopt=-i;  case=i }
+    [[ -n $A ]] && { ctxopt=-A${${A[1]#-A}:-2}; after=${${A[1]#-A}:-2} }
+    [[ -n $B ]] && { ctxopt=-B${${B[1]#-B}:-2}; before=${${B[1]#-B}:-2} }
+    [[ -n $C ]] && { ctxopt=-C${${C[1]#-C}:-2}; after=${${C[1]#-C}:-2}; before=${${C[1]#-C}:-2} }
     [[ -n $m ]] && mdopt=--depth=${${m[1]#-m}:-0}
     [[ -n $D ]] && dir=${D[2]:a}
 
