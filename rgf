@@ -86,7 +86,7 @@ rgf() {
     args=("${@:#--}")
 
     [[ -n $h ]] && { __rgf_help; return 0 }
-    [[ -n $i ]] && { caseopt=-i;  case=i }
+    [[ -n $i ]] && { caseopt=-i; case=i }
     [[ -n $A ]] && { ctxopt=-A${${A[1]#-A}:-2}; after=${${A[1]#-A}:-2} }
     [[ -n $B ]] && { ctxopt=-B${${B[1]#-B}:-2}; before=${${B[1]#-B}:-2} }
     [[ -n $C ]] && { ctxopt=-C${${C[1]#-C}:-2}; after=${${C[1]#-C}:-2}; before=${${C[1]#-C}:-2} }
@@ -96,10 +96,10 @@ rgf() {
     for arg in ${${ffltrs:#-f}:|overrds}; do farg+="--ignore $arg "; done
     for arg in ${sfltrs:#-E};             do farg+="--ignore *.$arg "; done
 
-    [[ -n $dspc ]] && parg="("${dspc:#-d}")/.*"
-    [[ -n $fspc ]] && parg+="("${fspc:#-p}")"
-    [[ -n $sfix ]] && parg+="\.("${sfix:#-e}")$"
-    [[ -n $parg ]] && farg+="-G $parg "
+    [[ -n $dspc ]] && parg+="("${dspc:#-d}")/.*"
+    [[ -n $fspc ]] && parg+="("${fspc:#-p}")[^/]*"
+    [[ -n $sfix ]] && parg+="\.("${sfix:#-e}")"
+    [[ -n $parg ]] && farg+="-G ${parg}$ "
 
     for arg in $args; do pattern+="(?=.*(?:$arg))"; done
 
