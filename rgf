@@ -103,11 +103,11 @@ rgf() {
 
     for arg in $args; do pattern+="(?=.*(?:$arg))"; done
 
-    perl='BEGIN { @terms = split(/\n/, "'${args:+${(j:\n:)${(q)args}}}'"); $filters = "'${(j:|:)${(q)fltrs:#-v}}'"; @colors = (31, 32, 36, 34, 35);
+    perl='BEGIN { @terms = split(/\n/, "'${args:+${(j:\n:)${(q)args}}}'"); $filters = "'${fltrs:+${(j:|:)${(q)fltrs:#-v}}}'"; @colors = (31, 32, 36, 34, 35);
                   $case = "'$case'"; $color="\e\[[0-9;]*[mK]"; $sprefix="^[^:]+:($color)+[0-9]+($color)+:($color)*"; $white = "\e[00m"; $| = 1; }
           sub colormatches {
               if ($streaming) { $content = $_ } else { ($prefix, undef, undef, undef, $content) = $_ =~ /($sprefix)(.*)/ }
-              if ($filters && $content =~ /(?$case)$filters/) { return (0, $prefix, $content) }
+              if (length($filters) && $content =~ /(?$case)$filters/) { return (0, $prefix, $content) }
               $ocontent = $content;
               for $i (0 .. $#terms) {
                   if ($ocontent =~ /(?$case)$terms[$i]/) { $content =~ s/(?$case)$terms[$i]/\e\[$colors[$i % 5]m$&$white/g }
@@ -137,7 +137,7 @@ rgf() {
                        for ($j = 1; $j <= $after; $j++) { if ($row + $j <= keys %contextrows) { $buffer .= "\n$contextrows{$row + $j}" } }
                        $buffer .= "\n--"
                    }
-                   if ($buffer) { print $buffer } } '
+                   if (length($buffer)) { print $buffer } } '
     fi
 
     if [[ -n $streaming ]]; then
