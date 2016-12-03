@@ -6,7 +6,7 @@
 #
 # There are two sets of parameters: file selection and search terms. File selection parameters limit which files are searched for matches,
 # and are key to making the function fast. The most important are the -f parameters, which are intended to be a more or less
-# permanent list of file patterns that will NOT be searched. This could ideally be maintained in an alias. If used like this, the -F
+# permanent list of file patterns that will NOT be searched. This could ideally be maintained in an alias. If used with such an alias, the -F
 # parameters can be used to override the filtering, if a specific file should be included for a particular search. For example, for gradle
 # users, "build" is a good filter to have, but if you have specified "-f build" in your "rg" alias, calling "rg -F build" searches "build"
 # directories as well. The -E parameter can be used to exclude files with a particular file ending, so that "rg -E html" excludes all files
@@ -20,19 +20,19 @@
 # NOTE 2: because of a quirk in the way "ag" works, negative file selection parameters such as -f and -E are expressed as globs, whereas
 # positive file selection (-d, -e, -p) are expressed as regular expressions.
 #
-# The search terms are used to find matching lines in the file contents. Patterns given as arguments are combined with an implicit AND. Thus
-# "rg no valid miu" will display all lines with ALL THREE words. Logical OR can be expressed with pipe (and need to be quoted):
-# "rg certifikat 'test|grp'".
+# The second set of parameters, the search terms, are used to find matching lines in the file contents. Patterns given as arguments are
+# combined with an implicit AND. Thus "rg no valid miu" will display all lines with ALL THREE words (in any order). Logical OR can be
+# expressed with pipe (and need to be quoted): "rg certifikat 'test|grp'".
 #
 # The function has been designed to lessen the need for regular expressions while searching ("no valid miu" is easier to type than the
-# corresponding regular expression permitting the three in any order), but full Perl style regular expressions are still supported in
+# corresponding regular expression permitting the three in any order), but full Perl style regular expressions are supported in
 # any search term. You can easily search for, say, the complete word "compile" and four digits in a row with "rg '\bcompile\b' '\d\d\d\d'.
 #
 # The main focus of the function is to provide fast file search in a given directory, but it can also be used as a unix filter, accepting
 # input from stdin. Example: tail -f catalina.out | rg connect 'error|warning'. In this case the file selection parameters are of course
 # irrelevant.
 #
-# NOTE 3: searching for literal '(', ')', '^', '$', '*', '+' or other regular expression anchors or quantifieres requires single quotes and
+# NOTE 3: searching for literal '(', ')', '^', '$', '*', '+' or other regular expression anchors or quantifieres requires single quotes AND
 # backslashes: rg 'getId\(\)', rg '\$html'.
 
 # NOTE 4: understanding how the function works is not a prerequisite for using it, but there are two corner cases that might produce
@@ -150,7 +150,7 @@ rgf() {
             if [[ -n $o ]]; then
                 print -r -l -- ${${(M)rlines:#${~zprefix}*}##${~zprefix}} # No context lines, remove file names and line numbers.
             elif [[ -n $l ]]; then
-                print -r -l -- ${(q-)${(u)${${${(M)rlines:#${~zprefix}*}//${~color}/}%%:*}}} # Match lines, no color, keep filenames, unique, quote.
+                print -r -l -- ${(q-)${(u)${${${(M)rlines:#${~zprefix}*}//${~color}/}%%:*}}} # Matching lines, no color, keep filenames, unique, quote.
             else
                 print -r -l -- $rlines
             fi
