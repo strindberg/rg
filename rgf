@@ -76,11 +76,11 @@ Options:
 rgf() {
     setopt LOCAL_OPTIONS EXTENDED_GLOB
 
-    local color=$'\e'"\[[0-9;]#[mK]" caseopt="-s" before=0 after=0 pattern="^" dir arg farg parg mdopt ctxopt case perl streaming
+    local color=$'\e'"\[[0-9;]#[mK]" caseopt="-s" before=0 after=0 pattern="^" dir arg farg parg mdopt ctxopt case perl stream
     local zprefix="[^:]##:($color)##[0-9]##($color)##:($color)#"
-    local -a i l o q D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines h
+    local -a i l o q s D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines h
 
-    zparseopts -D -E i=i l=l o=o q=q D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds h=h -help=h \
+    zparseopts -D -E i=i l=l o=o q=q s=s D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds h=h -help=h \
         || { __rgf_help; return 1 }
 
     args=("${@:#--}")
@@ -92,6 +92,7 @@ rgf() {
     [[ -n $C ]] && { ctxopt=-C${${C[1]#-C}:-2}; after=${${C[1]#-C}:-2}; before=${${C[1]#-C}:-2} }
     [[ -n $m ]] && mdopt=--depth=${${m[1]#-m}:-0}
     [[ -n $D ]] && dir=${D[2]:a}
+    [[ -n $s && -z $ctxopt ]] && stream=true
 
     for arg in ${${ffltrs:#-f}:|overrds}; do farg+="--ignore $arg "; done
     for arg in ${sfltrs:#-E};             do farg+="--ignore *.$arg "; done
@@ -106,14 +107,12 @@ rgf() {
     perl='BEGIN { @terms = split(/\n/, "'${args:+${(j:\n:)${(q)args}}}'"); $filters = "'${fltrs:+${(j:|:)${(q)fltrs:#-v}}}'"; @colors = (31, 32, 36, 34, 35);
                   $case = "'$case'"; $color="\e\[[0-9;]*[mK]"; $sprefix="^[^:]+:($color)+[0-9]+($color)+:($color)*"; $white = "\e[00m"; $| = 1; }
           sub colormatches {
-              if ($streaming) { $content = $_ } else { ($prefix, undef, undef, undef, $content) = $_ =~ /($sprefix)(.*)/ }
+              if ("'$stream'") { $content = $_ } else { ($prefix, undef, undef, undef, $content) = $_ =~ /($sprefix)(.*)/ }
               if (length($filters) && $content =~ /(?$case)$filters/) { return (0, $prefix, $content) }
               for $i (0 .. $#terms) { $content =~ s/(?$case)$terms[$i]/\e\[$colors[$i % 5]m$&$white/g }
               return (1, $prefix, $content) } '
     if [[ -z $ctxopt ]]; then
-        [[ ! -t 0 ]] && streaming=true
-        perl+='BEGIN { $streaming = "'$streaming'" }
-               ($match, $rprefix, $rcontent) = colormatches(); if ($match) { print $rprefix . $rcontent } '
+        perl+='($match, $rprefix, $rcontent) = colormatches(); if ($match) { print $rprefix . $rcontent } '
     else
         perl+='BEGIN { $before = '$before'; $after = '$after'; %matchrows = (); %contextrows = (); $rowcount = 0; }
                if (/$sprefix/) {
@@ -136,11 +135,11 @@ rgf() {
                    if (length($buffer)) { print $buffer } } '
     fi
 
-    if [[ -n $streaming ]]; then
+    if [[ -n $stream ]]; then
         noglob ag --nomultiline $caseopt -- $pattern | perl -l -n -e $perl
     else
         rlines=("${(@f)$(noglob ag --filename --noheading --nomultiline --color --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- \
-                         $pattern $dir | perl -l -n -e $perl)}")
+                         $pattern $dir < /dev/null | perl -l -n -e $perl)}")
 
         if (( ${rlines[(I)?*]} > 0 && ! $#q )); then # Display results if there are non-empty elements (and -q is not set).
             if [[ -n $o ]]; then
