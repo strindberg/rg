@@ -108,11 +108,7 @@ rgf() {
           sub colormatches {
               if ($streaming) { $content = $_ } else { ($prefix, undef, undef, undef, $content) = $_ =~ /($sprefix)(.*)/ }
               if (length($filters) && $content =~ /(?$case)$filters/) { return (0, $prefix, $content) }
-              $ocontent = $content;
-              for $i (0 .. $#terms) {
-                  if ($ocontent =~ /(?$case)$terms[$i]/) { $content =~ s/(?$case)$terms[$i]/\e\[$colors[$i % 5]m$&$white/g }
-                  else { return (0, $prefix, $content)}
-              }
+              for $i (0 .. $#terms) { $content =~ s/(?$case)$terms[$i]/\e\[$colors[$i % 5]m$&$white/g }
               return (1, $prefix, $content) } '
     if [[ -z $ctxopt ]]; then
         [[ ! -t 0 ]] && streaming=true
@@ -141,10 +137,10 @@ rgf() {
     fi
 
     if [[ -n $streaming ]]; then
-        noglob ag $caseopt -- $pattern | perl -l -n -e $perl
+        noglob ag --nomultiline $caseopt -- $pattern | perl -l -n -e $perl
     else
-        rlines=("${(@f)$(noglob ag --filename --noheading --color --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- $pattern $dir | \
-                         perl -l -n -e $perl)}")
+        rlines=("${(@f)$(noglob ag --filename --noheading --nomultiline --color --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- \
+                         $pattern $dir | perl -l -n -e $perl)}")
 
         if (( ${rlines[(I)?*]} > 0 && ! $#q )); then # Display results if there are non-empty elements (and -q is not set).
             if [[ -n $o ]]; then
