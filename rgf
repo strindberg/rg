@@ -104,24 +104,25 @@ rgf() {
 
     for arg in $args; do pattern+="(?=.*(?:$arg))"; done
 
-    perl='BEGIN { @terms = split(/\n/, "'${args:+${(j:\n:)${(q)args}}}'"); $filters = "'${fltrs:+${(j:|:)${(q)fltrs:#-v}}}'"; @colors = (31, 32, 36, 34, 35);
-                  $case = "'$case'"; $color="\e\[[0-9;]*[mK]"; $sprefix="^[^:]+:($color)+[0-9]+($color)+:($color)*"; $white = "\e[00m"; $| = 1; }
+    perl='BEGIN { @terms = split(/\n/, "'${args:+${(j:\n:)${(q)args}}}'"); $filters = "'${fltrs:+${(j:|:)${(q)fltrs:#-v}}}'"; $case = "'$case'";
+                  $color="\e\[[0-9;]*[mK]"; $sprefix="^[^:]+:($color)+[0-9]+($color)+:($color)*"; @colors = (31, 32, 36, 34, 35); $| = 1 }
           sub colormatches {
               if ("'$stream'") { $content = $_ } else { ($prefix, undef, undef, undef, $content) = $_ =~ /($sprefix)(.*)/ }
               if (length($filters) && $content =~ /(?$case)$filters/) { return (0, $prefix, $content) }
-              for $i (0 .. $#terms) { $content =~ s/(?$case)$terms[$i]/\e\[$colors[$i % 5]m$&$white/g }
+              for $i (0 .. $#terms) { $content =~ s/(?$case)$terms[$i]/\e\[$colors[$i % 5]m$&\e\[00m/g }
               return (1, $prefix, $content) } '
+
     if [[ -z $ctxopt ]]; then
         perl+='($match, $rprefix, $rcontent) = colormatches(); if ($match) { print $rprefix . $rcontent } '
     else
-        perl+='BEGIN { %matchrows = (); %contextrows = (); $rowcount = 0; }
+        perl+='BEGIN { %matchrows = (); %contextrows = (); $rowcount = 0 }
                if (/$sprefix/) {
                    $rowcount++;
                    ($match, $rprefix, $rcontent) = colormatches();
                    if ($match) { $matchrows{$rowcount} = $rprefix . $rcontent }
                    $contextrows{$rowcount} = $rprefix =~ s/.*\K:/-/rg . $rcontent =~ s/$color//gr
                }
-               elsif (/^($color)*--($color)*$|^$/) { printlines(); %matchrows = (); %contextrows = (); $rowcount = 0; }
+               elsif (/^($color)*--($color)*$|^$/) { printlines(); %matchrows = (); %contextrows = (); $rowcount = 0 }
                else { $contextrows{++$rowcount} = $_ }
                END { printlines() }
                sub printlines {
