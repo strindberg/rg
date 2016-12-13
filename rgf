@@ -121,7 +121,7 @@ rgf() {
                    $rowcount++;
                    ($match, $rprefix, $rcontent) = colormatches();
                    if ($match) { $matchrows{$rowcount} = $rprefix . $rcontent }
-                   $contextrows{$rowcount} = $rprefix =~ s/.*\K:/-/rg . $rcontent =~ s/$color//gr
+                   $contextrows{$rowcount} = $rprefix =~ s/.*\K:/-/gr . $rcontent =~ s/$color//gr
                }
                elsif (/^($color)*--($color)*$|^$/) { printlines(); %matchrows = (); %contextrows = (); $rowcount = 0 }
                else { $contextrows{++$rowcount} = $_ }
@@ -138,9 +138,9 @@ rgf() {
     fi
 
     if [[ -n $stream ]]; then
-        noglob ag --nomultiline $caseopt -- $pattern | perl -l -n -e $perl
+        noglob ag $caseopt -- $pattern | perl -l -n -e $perl
     else
-        rlines=("${(@f)$(noglob ag --filename --noheading --nomultiline $colopt --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- \
+        rlines=("${(@f)$(noglob ag --filename --noheading $colopt --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- \
                          $pattern $dir < /dev/null | perl -l -n -e $perl)}")
 
         if (( ${rlines[(I)?*]} > 0 && ! $#q )); then # Display results if there are non-empty elements (and -q is not set).
