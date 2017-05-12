@@ -117,25 +117,24 @@ rgf() {
     if [[ -z $ctxopt ]]; then
         perl+='($match, $rprefix, $rcontent) = colormatches(); if ($match) { print $rprefix . $rcontent } '
     else
-        perl+='BEGIN { %matchrows = (); %contextrows = (); $rowcount = 0 }
+        perl+='BEGIN { %matchrows = (); %contextrows = (); $rowcount = 0; $, = "\n" }
                if (/$sprefix/) {
-                   $rowcount++;
                    ($match, $rprefix, $rcontent) = colormatches();
                    if ($match) { $matchrows{$rowcount} = $rprefix . $rcontent }
-                   $contextrows{$rowcount} = $rprefix =~ s/.*\K:/-/gr . $rcontent =~ s/$color//gr
+                   $contextrows{$rowcount++} = $rprefix =~ s/.*\K:/-/gr . $rcontent =~ s/$color//gr
                }
                elsif (/^($color)*--($color)*$|^$/) { printlines(); %matchrows = (); %contextrows = (); $rowcount = 0 }
-               else { $contextrows{++$rowcount} = $_ }
+               else { $contextrows{$rowcount++} = $_ }
                END { printlines() }
                sub printlines {
-                   $buffer = "";
+                   @buffer = ();
                    foreach $row (sort keys %matchrows) {
-                       for ($j = '$before'; $j > 0; $j--) { if ($row - $j >= 0) { $buffer .= "\n$contextrows{$row - $j}" } }
-                       $buffer .= "\n$matchrows{$row}";
-                       for ($j = 1; $j <= '$after'; $j++) { if ($row + $j <= keys %contextrows) { $buffer .= "\n$contextrows{$row + $j}" } }
-                       $buffer .= "\n--"
+                       for ($j = '$before'; $j > 0; $j--) { if ($row - $j >= 0) { push(@buffer, $contextrows{$row - $j}) } }
+                       push(@buffer, $matchrows{$row});
+                       for ($j = 1; $j <= '$after'; $j++) { if ($row + $j < keys %contextrows) { push(@buffer, $contextrows{$row + $j}) } }
+                       push(@buffer, "--")
                    }
-                   if (length($buffer)) { print $buffer } } '
+                   if (length(@buffer)) { print @buffer } } '
     fi
 
     if [[ -n $stream ]]; then
