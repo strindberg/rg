@@ -77,12 +77,12 @@ Options:
 rgf() {
     setopt LOCAL_OPTIONS EXTENDED_GLOB
 
-    local color=$'\e'"\[[0-9;]#[mK]" caseopt="-s" before=0 after=0 pattern="^" colopt="--color" dir arg farg parg mdopt ctxopt case perl
-    local zprefix="[^:]##:($color)#[0-9]##($color)#:($color)#"
-    local -a i l o q c D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines h
+    local caseopt="-s" before=0 after=0 pattern="^" colopt="--color" dir arg farg parg mdopt ctxopt case perl
+    local color=$'\e'"\[[0-9;]#[mK]"; local zprefix="[^:]##:($color)#[0-9]##($color)#:($color)#"
+    local -a i l o q c h D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines
 
-    zparseopts -D -E i=i l=l o=o q=q c=c D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds -help=h \
-        || { __rgf_help; return 1 }
+    zparseopts -D -E i=i l=l o=o q=q c=c D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m \
+               v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds -help=h || { __rgf_help; return 1 }
 
     args=("${@:#--}")
 
@@ -105,8 +105,9 @@ rgf() {
 
     for arg in $args; do pattern+="(?=.*(?:$arg))"; done
 
-    perl='BEGIN { @terms = split(/\n/, "'${args:+${(j:\n:)${(q)args}}}'"); $filters = "'${fltrs:+${(j:|:)${(q)fltrs:#-v}}}'"; $case = "'$case'";
-                  $color="\e\[[0-9;]*[mK]"; $sprefix="^[^:]+:($color)*[0-9]+($color)*:($color)*"; @colors = (31, 32, 36, 34, 35) }
+    perl='BEGIN { @terms = split(/\n/, "'${args:+${(j:\n:)${${(q)args}//@/\\@}}}'");
+                  $filters = "'${fltrs:+${(j:|:)${${(q)fltrs:#-v}//@/\\@}}}'"; $case = "'$case'";
+                  @colors = (31, 32, 36, 34, 35); $color="\e\[[0-9;]*[mK]"; $sprefix="^[^:]+:($color)*[0-9]+($color)*:($color)*" }
           sub colormatches {
               ($prefix, undef, undef, undef, $content) = $_ =~ /($sprefix)(.*)/;
               if (length($filters) && $content =~ /(?$case)$filters/) { return (0, $prefix, $content) }
@@ -139,17 +140,17 @@ rgf() {
     rlines=("${(@f)$(noglob ag --filename --noheading $colopt --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- \
                          $pattern $dir < /dev/null | perl -l -n -e $perl)}")
 
-    if (( ${rlines[(I)?*]} > 0 && ! $#q )); then # Display results if there are non-empty elements (and -q is not set).
+    if (( ${rlines[(I)?*]} > 0 && ! $#q )); then
         if [[ -n $o ]]; then
-            print -r -l -- ${${(M)rlines:#${~zprefix}*}##${~zprefix}} # No context lines, remove file names and line numbers.
+            print -r -l -- ${${(M)rlines:#${~zprefix}*}##${~zprefix}}
         elif [[ -n $l ]]; then
-            print -r -l -- ${(q-)${(u)${${${(M)rlines:#${~zprefix}*}//${~color}/}%%:*}}} # Matching lines, no color, keep filenames, unique, quote.
+            print -r -l -- ${(q-)${(u)${${${(M)rlines:#${~zprefix}*}//${~color}/}%%:*}}}
         else
             print -r -l -- $rlines
         fi
     fi
 
-    lastoutput=(${${(M)rlines:#${~zprefix}*}//${~color}/}) # No context lines, no colors.
+    lastoutput=(${${(M)rlines:#${~zprefix}*}//${~color}/})
 
     return $(( ${rlines[(I)?*]} == 0 ))
 }
