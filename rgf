@@ -75,7 +75,7 @@ Options:
 }
 
 rgf() {
-    setopt LOCAL_OPTIONS EXTENDED_GLOB
+    setopt LOCAL_OPTIONS EXTENDED_GLOB NO_SHWORDSPLIT
 
     local caseopt="-s" before=0 after=0 pattern="^" colopt="--color" dir arg farg parg mdopt ctxopt case perl
     local color=$'\e'"\[[0-9;]#[mK]"; local zprefix="[^:]##:($color)#[0-9]##($color)#:($color)#"
@@ -117,21 +117,21 @@ rgf() {
     if [[ -z $ctxopt ]]; then
         perl+='($match, $rprefix, $rcontent) = colormatches(); if ($match) { print $rprefix . $rcontent } '
     else
-        perl+='BEGIN { %matchrows = (); %contextrows = (); $rowcount = 0; $, = "\n" }
+        perl+='BEGIN { %matchrows = (); %ctxrows = (); $rowcount = 0; $, = "\n" }
                if (/$sprefix/) {
                    ($match, $rprefix, $rcontent) = colormatches();
                    if ($match) { $matchrows{$rowcount} = $rprefix . $rcontent }
-                   $contextrows{$rowcount++} = $rprefix =~ s/.*\K:/-/gr . $rcontent =~ s/$color//gr
+                   $ctxrows{$rowcount++} = $rprefix =~ s/.*\K:/-/gr . $rcontent =~ s/$color//gr
                }
-               elsif (/^($color)*--($color)*$|^$/) { printlines(); %matchrows = (); %contextrows = (); $rowcount = 0 }
-               else { $contextrows{$rowcount++} = $_ }
+               elsif (/^($color)*--($color)*$|^$/) { printlines(); %matchrows = (); %ctxrows = (); $rowcount = 0 }
+               else { $ctxrows{$rowcount++} = $_ }
                END { printlines() }
                sub printlines {
                    @buffer = ();
                    foreach $row (sort keys %matchrows) {
-                       for ($j = '$before'; $j > 0; $j--) { if ($row - $j >= 0) { push(@buffer, $contextrows{$row - $j}) } }
+                       for ($j = '$before'; $j > 0; $j--) { if ($row - $j >= 0) { push(@buffer, $ctxrows{$row - $j}) } }
                        push(@buffer, $matchrows{$row});
-                       for ($j = 1; $j <= '$after'; $j++) { if ($row + $j < keys %contextrows) { push(@buffer, $contextrows{$row + $j}) } }
+                       for ($j = 1; $j <= '$after'; $j++) { if ($row + $j < keys %ctxrows) { push(@buffer, $ctxrows{$row + $j}) } }
                        push(@buffer, "--")
                    }
                    if (length(@buffer)) { print @buffer } } '
