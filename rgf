@@ -79,28 +79,27 @@ rgf() {
 
     local caseopt="-s" before=0 after=0 pattern="^" colopt="--color" dir arg farg parg mdopt ctxopt case perl
     local color=$'\e'"\[[0-9;]#[mK]"; local zprefix="[^:]##:($color)#[0-9]##($color)#:($color)#"
-    local -a i l o q c h D A B C m dspc fspc sfix fltrs sfltrs ffltrs overrds args rlines
+    local -a fltrs sfltrs ffltrs ovrrds args rlines; local -A OPTS
 
-    zparseopts -D -E i=i l=l o=o q=q c=c D:=D d:=dspc e:=sfix p:=fspc A::=A B::=B C::=C m::=m \
-               v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=overrds -help=h || { __rgf_help; return 1 }
+    zparseopts -D -E -A OPTS i l o q c D: d: e: p: A: B: C: m: v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=ovrrds -help || { __rgf_help; return 1 }
 
     args=("${@:#--}")
 
-    [[ -n $h ]] && { __rgf_help; return 0 }
-    [[ -n $i ]] && { caseopt=-i; case=i }
-    [[ -n $A ]] && { ctxopt=-A${${A[1]#-A}:-2}; after=${${A[1]#-A}:-2} }
-    [[ -n $B ]] && { ctxopt=-B${${B[1]#-B}:-2}; before=${${B[1]#-B}:-2} }
-    [[ -n $C ]] && { ctxopt=-C${${C[1]#-C}:-2}; after=${${C[1]#-C}:-2}; before=${${C[1]#-C}:-2} }
-    [[ -n $m ]] && mdopt=--depth=${${m[1]#-m}:-0}
-    [[ -n $D ]] && dir=${D[2]:a}
-    [[ -n $c ]] && colopt=""
+    [[ -n ${(k)OPTS[--help]} ]] && { __rgf_help; return 0 }
+    [[ -n ${(k)OPTS[-i]} ]] && { caseopt=-i; case=i }
+    [[ -n ${(k)OPTS[-A]} ]] && { ctxopt=-A$OPTS[-A]; after=$OPTS[-A] }
+    [[ -n ${(k)OPTS[-B]} ]] && { ctxopt=-B$OPTS[-B]; before=$OPTS[-B] }
+    [[ -n ${(k)OPTS[-C]} ]] && { ctxopt=-C$OPTS[-C]; after=$OPTS[-C]; before=$OPTS[-C] }
+    [[ -n ${(k)OPTS[-m]} ]] && mdopt=--depth=$OPTS[-m]
+    [[ -n ${(k)OPTS[-D]} ]] && dir="$OPTS[-D]"
+    [[ -n ${(k)OPTS[-c]} ]] && colopt=""
 
-    for arg in ${${ffltrs:#-f}:|overrds}; do farg+="--ignore $arg "; done
-    for arg in ${sfltrs:#-E};             do farg+="--ignore *.$arg "; done
+    for arg in ${${ffltrs:#-f}:|ovrrds}; do farg+="--ignore $arg "; done
+    for arg in ${sfltrs:#-E};            do farg+="--ignore *.$arg "; done
 
-    [[ -n $dspc ]] && parg+="("${dspc:#-d}")/.*"
-    [[ -n $fspc ]] && parg+="("${fspc:#-p}")[^/]*"
-    [[ -n $sfix ]] && parg+="\.("${sfix:#-e}")"
+    [[ -n ${(k)OPTS[-d]} ]] && parg+="("$OPTS[-d]")/.*"
+    [[ -n ${(k)OPTS[-p]} ]] && parg+="("$OPTS[-p]")[^/]*"
+    [[ -n ${(k)OPTS[-e]} ]] && parg+="\.("$OPTS[-e]")"
     [[ -n $parg ]] && farg+="-G ${parg}$ "
 
     for arg in $args; do pattern+="(?=.*(?:$arg))"; done
@@ -132,18 +131,17 @@ rgf() {
                        for ($j = '$before'; $j > 0; $j--) { if ($row - $j >= 0) { push(@buffer, $ctxrows{$row - $j}) } }
                        push(@buffer, $matchrows{$row});
                        for ($j = 1; $j <= '$after'; $j++) { if ($row + $j < keys %ctxrows) { push(@buffer, $ctxrows{$row + $j}) } }
-                       push(@buffer, "--")
                    }
-                   if (length(@buffer)) { print @buffer } } '
+                   if (length(@buffer)) { print @buffer; print "--" } } '
     fi
 
     rlines=("${(@f)$(noglob ag --filename --noheading $colopt --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- \
-                         $pattern $dir < /dev/null | perl -l -n -e $perl)}")
+                            $pattern $dir < /dev/null | perl -l -n -e $perl)}")
 
-    if (( ${rlines[(I)?*]} > 0 && ! $#q )); then
-        if [[ -n $o ]]; then
+    if (( ${rlines[(I)?*]} > 0 )) && [[ -z ${(k)OPTS[-q]} ]]; then
+        if [[ -n ${(k)OPTS[-o]} ]]; then
             print -r -l -- ${${(M)rlines:#${~zprefix}*}##${~zprefix}}
-        elif [[ -n $l ]]; then
+        elif [[ -n ${(k)OPTS[-l]} ]]; then
             print -r -l -- ${(q-)${(u)${${${(M)rlines:#${~zprefix}*}//${~color}/}%%:*}}}
         else
             print -r -l -- $rlines
