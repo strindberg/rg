@@ -131,8 +131,9 @@ rgf() {
                        for ($j = '$before'; $j > 0; $j--) { if ($row - $j >= 0) { push(@buffer, $ctxrows{$row - $j}) } }
                        push(@buffer, $matchrows{$row});
                        for ($j = 1; $j <= '$after'; $j++) { if ($row + $j < keys %ctxrows) { push(@buffer, $ctxrows{$row + $j}) } }
+                       push(@buffer, "--")
                    }
-                   if (length(@buffer)) { print @buffer; print "--" } } '
+                   if (length(@buffer)) { print @buffer } } '
     fi
 
     rlines=("${(@f)$(noglob ag --filename --noheading $colopt --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- \
