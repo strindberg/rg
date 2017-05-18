@@ -79,27 +79,27 @@ rgf() {
 
     local caseopt="-s" before=0 after=0 pattern="^" colopt="--color" dir arg farg parg mdopt ctxopt case perl
     local color=$'\e'"\[[0-9;]#[mK]"; local zprefix="[^:]##:($color)#[0-9]##($color)#:($color)#"
-    local -a fltrs sfltrs ffltrs ovrrds args rlines; local -A OPTS
+    local -a fltrs sfltrs ffltrs ovrrds args rlines; local -A opts
 
-    zparseopts -D -E -A OPTS i l o q c D: d: e: p: A: B: C: m: v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=ovrrds -help || { __rgf_help; return 1 }
+    zparseopts -D -E -A opts i l o q c D: d: e: p: A: B: C: m: v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=ovrrds -help || { __rgf_help; return 1 }
 
     args=("${@:#--}")
 
-    [[ -n ${(k)OPTS[--help]} ]] && { __rgf_help; return 0 }
-    [[ -n ${(k)OPTS[-i]} ]] && { caseopt=-i; case=i }
-    [[ -n ${(k)OPTS[-A]} ]] && { ctxopt=-A$OPTS[-A]; after=$OPTS[-A] }
-    [[ -n ${(k)OPTS[-B]} ]] && { ctxopt=-B$OPTS[-B]; before=$OPTS[-B] }
-    [[ -n ${(k)OPTS[-C]} ]] && { ctxopt=-C$OPTS[-C]; after=$OPTS[-C]; before=$OPTS[-C] }
-    [[ -n ${(k)OPTS[-m]} ]] && mdopt=--depth=$OPTS[-m]
-    [[ -n ${(k)OPTS[-D]} ]] && dir="$OPTS[-D]"
-    [[ -n ${(k)OPTS[-c]} ]] && colopt=""
+    (( $+opts[--help] )) && { __rgf_help; return 0 }
+    (( $+opts[-i] )) && { caseopt=-i; case=i }
+    (( $+opts[-A] )) && { ctxopt=-A$opts[-A]; after=$opts[-A] }
+    (( $+opts[-B] )) && { ctxopt=-B$opts[-B]; before=$opts[-B] }
+    (( $+opts[-C] )) && { ctxopt=-C$opts[-C]; after=$opts[-C]; before=$opts[-C] }
+    (( $+opts[-m] )) && mdopt=--depth=$opts[-m]
+    (( $+opts[-D] )) && dir="$opts[-D]"
+    (( $+opts[-c] )) && colopt=""
 
     for arg in ${${ffltrs:#-f}:|ovrrds}; do farg+="--ignore $arg "; done
     for arg in ${sfltrs:#-E};            do farg+="--ignore *.$arg "; done
 
-    [[ -n ${(k)OPTS[-d]} ]] && parg+="("$OPTS[-d]")/.*"
-    [[ -n ${(k)OPTS[-p]} ]] && parg+="("$OPTS[-p]")[^/]*"
-    [[ -n ${(k)OPTS[-e]} ]] && parg+="\.("$OPTS[-e]")"
+    (( $+opts[-d] )) && parg+="("$opts[-d]")/.*"
+    (( $+opts[-p] )) && parg+="("$opts[-p]")[^/]*"
+    (( $+opts[-e] )) && parg+="\.("$opts[-e]")"
     [[ -n $parg ]] && farg+="-G ${parg}$ "
 
     for arg in $args; do pattern+="(?=.*(?:$arg))"; done
@@ -139,10 +139,10 @@ rgf() {
     rlines=("${(@f)$(noglob ag --filename --noheading $colopt --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- \
                             $pattern $dir < /dev/null | perl -l -n -e $perl)}")
 
-    if (( ${rlines[(I)?*]} > 0 )) && [[ -z ${(k)OPTS[-q]} ]]; then
-        if [[ -n ${(k)OPTS[-o]} ]]; then
+    if (( ${rlines[(I)?*]} > 0 && ! $+opts[-q] )); then
+        if (( $+opts[-o] )); then
             print -r -l -- ${${(M)rlines:#${~zprefix}*}##${~zprefix}}
-        elif [[ -n ${(k)OPTS[-l]} ]]; then
+        elif (( $+opts[-l] )); then
             print -r -l -- ${(q-)${(u)${${${(M)rlines:#${~zprefix}*}//${~color}/}%%:*}}}
         else
             print -r -l -- $rlines
