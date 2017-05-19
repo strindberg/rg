@@ -120,7 +120,7 @@ rgf() {
                if (/$sprefix/) {
                    ($match, $rprefix, $rcontent) = colormatches();
                    if ($match) { $matchrows{$rowcount} = $rprefix . $rcontent }
-                   $ctxrows{$rowcount++} = $rprefix =~ s/.*\K:/-/gr . $rcontent =~ s/$color//gr
+                   $ctxrows{$rowcount++} = $rprefix =~ s/:($color)*$/-/gr . $rcontent =~ s/$color//gr
                }
                elsif (/^($color)*--($color)*$|^$/) { printlines(); %matchrows = (); %ctxrows = (); $rowcount = 0 }
                else { $ctxrows{$rowcount++} = $_ }
