@@ -97,9 +97,9 @@ rgf() {
     for arg in ${${ffltrs:#-f}:|ovrrds}; do farg+="--ignore $arg "; done
     for arg in ${sfltrs:#-E};            do farg+="--ignore *.$arg "; done
 
-    (( $+opts[-d] )) && parg+="("$opts[-d]")/.*"
-    (( $+opts[-p] )) && parg+="("$opts[-p]")[^/]*"
-    (( $+opts[-e] )) && parg+="\.("$opts[-e]")"
+    (( $+opts[-d] )) && parg+="^(|.*/)($opts[-d])/.*"
+    (( $+opts[-p] )) && parg+="($opts[-p])[^/]*"
+    (( $+opts[-e] )) && parg+="\.($opts[-e])$"
     [[ -n $parg ]] && farg+="-G ${parg}$ "
 
     for arg in $args; do pattern+="(?=.*(?:$arg))"; done
