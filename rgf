@@ -77,7 +77,7 @@ Options:
 rgf() {
     setopt LOCAL_OPTIONS EXTENDED_GLOB NO_SHWORDSPLIT
 
-    local caseopt="-s" before=0 after=0 pattern="^" colopt="--color" dir arg farg parg mdopt ctxopt case perl
+    local caseopt="-s" before=0 after=0 pattern="^" colopt="--color" dir arg farg parg mdopt ctxopt case perl stream
     local color=$'\e'"\[[0-9;]#[mK]"; local zprefix="[^:]##:($color)#[0-9]##($color)#:($color)#"
     local -a fltrs sfltrs ffltrs ovrrds args rlines; local -A opts
 
@@ -94,6 +94,8 @@ rgf() {
     (( $+opts[-D] )) && dir="$opts[-D]"
     (( $+opts[-c] )) && colopt=""
 
+    tty -s || stream=true
+
     for arg in ${${ffltrs:#-f}:|ovrrds}; do farg+="--ignore $arg "; done
     for arg in ${sfltrs:#-E};            do farg+="--ignore *.$arg "; done
 
@@ -104,16 +106,16 @@ rgf() {
 
     for arg in $args; do pattern+="(?=.*(?:$arg))"; done
 
-    perl='BEGIN { @terms = split(/\n/, "'${args:+${(j:\n:)${${(q)args}//@/\\@}}}'");
+    perl='BEGIN { @terms = split(/\n/, "'${args:+${(j:\n:)${${(q)args}//@/\\@}}}'"); $| = 1;
                   $filters = "'${fltrs:+${(j:|:)${${(q)fltrs:#-v}//@/\\@}}}'"; $case = "'$case'";
                   @colors = (31, 32, 36, 34, 35); $color="\e\[[0-9;]*[mK]"; $sprefix="^[^:]+:($color)*[0-9]+($color)*:($color)*" }
           sub colormatches {
-              ($prefix, undef, undef, undef, $content) = $_ =~ /($sprefix)(.*)/;
+              if ("'$stream'") { $content = $_ } else { ($prefix, undef, undef, undef, $content) = $_ =~ /($sprefix)(.*)/ }
               if (length($filters) && $content =~ /(?$case)$filters/) { return (0, $prefix, $content) }
               if ("'$colopt'") { for $i (0 .. $#terms) { $content =~ s/(?$case)$terms[$i]/\e\[$colors[$i % 5]m$&\e\[00m/g } }
               return (1, $prefix, $content) } '
 
-    if [[ -z $ctxopt ]]; then
+    if [[ -z $ctxopt || -n $stream ]]; then
         perl+='($match, $rprefix, $rcontent) = colormatches(); if ($match) { print $rprefix . $rcontent } '
     else
         perl+='BEGIN { %matchrows = (); %ctxrows = (); $rowcount = 0; $, = "\n" }
@@ -136,22 +138,26 @@ rgf() {
                    if (length(@buffer)) { print @buffer } } '
     fi
 
-    rlines=("${(@f)$(noglob ag --filename --noheading $colopt --color-path 35 --hidden -U $caseopt $ctxopt $mdopt ${(z)farg} -- \
-                            $pattern $dir < /dev/null | perl -l -n -e $perl)}")
+    if [[ -n $stream ]]; then
+        noglob ag $caseopt -- $pattern | perl -l -n -e $perl
+    else
+        rlines=("${(@f)$(noglob ag --filename --noheading $colopt --color-path 35 --hidden -U \
+                             $caseopt $ctxopt $mdopt ${(z)farg} -- $pattern $dir < /dev/null | perl -l -n -e $perl)}")
 
-    if (( ${rlines[(I)?*]} > 0 && ! $+opts[-q] )); then
-        if (( $+opts[-o] )); then
-            print -r -l -- ${${(M)rlines:#${~zprefix}*}##${~zprefix}}
-        elif (( $+opts[-l] )); then
-            print -r -l -- ${(q-)${(u)${${${(M)rlines:#${~zprefix}*}//${~color}/}%%:*}}}
-        else
-            print -r -l -- $rlines
+        if (( ${rlines[(I)?*]} > 0 && ! $+opts[-q] )); then
+            if (( $+opts[-o] )); then
+                print -r -l -- ${${(M)rlines:#${~zprefix}*}##${~zprefix}}
+            elif (( $+opts[-l] )); then
+                print -r -l -- ${(q-)${(u)${${${(M)rlines:#${~zprefix}*}//${~color}/}%%:*}}}
+            else
+                print -r -l -- $rlines
+            fi
         fi
+
+        lastoutput=(${${(M)rlines:#${~zprefix}*}//${~color}/})
+
+        return $(( ${rlines[(I)?*]} == 0 ))
     fi
-
-    lastoutput=(${${(M)rlines:#${~zprefix}*}//${~color}/})
-
-    return $(( ${rlines[(I)?*]} == 0 ))
 }
 
 # Uncomment this line to use the function from bash
