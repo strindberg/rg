@@ -67,7 +67,7 @@ $ rg '\bport\b'
 Search for lines beginning with 'port':
 
 ```zsh
-$ rg ^port
+$ rg '^port'
 ```
 
 Search for lines beginning with 'port', possibly after initial whitespace:
@@ -85,7 +85,7 @@ $ rg port -D /opt/intyg
 Search for lines with string 'port' AND 'http'. Display matches with two context lines before and after match:
 
 ```zsh
-$ rg port http -C
+$ rg port http -C2
 ```
 
 Search for lines with string 'port' AND 'http'. Display matches with three context lines before and after match:
@@ -97,13 +97,13 @@ $ rg port http -C3
 Search for lines with string 'port' AND 'http'. Display matches with two context lines after match:
 
 ```zsh
-$ rg port http -A
+$ rg port http -A2
 ```
 
 Search for lines with string 'port' AND 'http'. Display matches with two context lines before match:
 
 ```zsh
-$ rg port http -B
+$ rg port http -B2
 ```
 
 Search for lines with string 'port' in java and javascript files:

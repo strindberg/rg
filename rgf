@@ -46,7 +46,7 @@
 # work to specify for example "-p hål.txt". ag is simply bad att matching files with characters outside ASCII. It will find the correct
 # files if you specify the pattern widely enough such as "-p h.*l.txt", but you cannot pinpoint a specific non-ascii character. 2) using
 # non-ascii works well as a search term: "rg hål" will find the correct file contens. The only limitation is that case insensitive
-# comparison does not work: so, for exampel, searching for "hål" case-insensitively with "rg hål" will not match "HÅL", because "Å" is not
+# comparison does not work: so, for example, searching for "hål" case-insensitively with "rg hål" will not match "HÅL", because "Å" is not
 # recognized as the upper-case version of "å". Furthermore, ag will get confused by an expression such as "h[åÅ]l". In this situation you
 # will need to search like this: "rg h(å|Å)l".
 
