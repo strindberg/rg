@@ -139,10 +139,10 @@ rgf() {
     fi
 
     if [[ -n $stream ]]; then
-        noglob ag $caseopt -- $pattern | perl -l -n -e $perl
+        noglob ag $caseopt -- $pattern | perl -lne $perl
     else
         rlines=("${(@f)$(noglob ag --filename --noheading $colopt --color-path 35 --hidden -U \
-                             $caseopt $ctxopt $mdopt ${(z)farg} -- $pattern $dir < /dev/null | perl -l -n -e $perl)}")
+                             $caseopt $ctxopt $mdopt ${(z)farg} -- $pattern $dir < /dev/null | perl -lne $perl)}")
 
         if (( ${rlines[(I)?*]} > 0 && ! $+opts[-q] )); then
             if (( $+opts[-o] )); then
