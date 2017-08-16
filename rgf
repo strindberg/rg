@@ -78,7 +78,7 @@ rgf() {
     setopt LOCAL_OPTIONS EXTENDED_GLOB NO_SHWORDSPLIT
 
     local caseopt="-s" before=0 after=0 pattern="^" colopt="--color" dir arg farg parg mdopt ctxopt case perl stream
-    local color=$'\e'"\[[0-9;]#[mK]"; local zprefix="[^:]##:($color)#[0-9]##($color)#:($color)#"
+    local color=$'\e'"\[[0-9;]#[mK]"; local zprefix="[^:]##:($color)#[0-9]##($color)#:($color)"
     local -a fltrs sfltrs ffltrs ovrrds args rlines; local -A opts
 
     zparseopts -D -E -A opts i l o q c D: d: e: p: A: B: C: m: v+:=fltrs E+:=sfltrs f+:=ffltrs F+:=ovrrds -help || { __rgf_help; return 1 }
