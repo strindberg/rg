@@ -62,10 +62,10 @@ Options:
 -d    pattern that a directory segment in the path of a matching file must match (ex. -d main). Logical OR is expressed with pipe (ex. -d 'main|test')
 -e    require the specified file ending (ex. -e js). Logical OR is expressed with pipe (ex. -e 'js|java')
 -p    pattern that file name must match (ex. -p build.gradle). Logical OR is expressed with pipe (ex. -p 'pom.xml|build.gradle')
--A    display lines after matches. Number of lines can be specified (ex. -A3). Default is 2 if -A is given without argument.
--B    display lines before matches. Number of lines can be specified (ex. -B3). Default is 2 if -B is given without argument.
--C    display lines before and after matches. Number of lines can be specified (ex. -C3). Default is 2 if -C is given without argument.
--m    specify max depth to descend into file tree (ex. -m2). Default is 25. If -m is given without argument, only current directory is searched.
+-A    display lines after matches. Number of lines can be specified (ex. -A3).
+-B    display lines before matches. Number of lines can be specified (ex. -B3).
+-C    display lines before and after matches. Number of lines can be specified (ex. -C3).
+-m    specify max depth to descend into file tree (ex. -m2). Default is 25. To only search current directory, specify -m0.
 -E    exclude files with the specified file ending (ex. -E js). This flag can be repeated to exclude several suffixes (ex. -E js -E html)
 -v    exclude file content lines matching pattern. Several filters can be specified. (ex. -v foo -v bar)
 -f    exclude files with names matching pattern. Several file name filters can be specified. (ex. -f target -f build)
